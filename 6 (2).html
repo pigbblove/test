@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>초등 6학년 영어 Dictation - 빈도 표현 받아쓰기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f9ff;
+            color: #1e293b;
+            user-select: none;
+        }
+
+        .font-en {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .heart-icon {
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 sm:p-6 bg-gradient-to-b from-sky-100 to-indigo-100">
+
+    <!-- App Header -->
+    <header class="w-full max-w-xl bg-white/90 backdrop-blur-md rounded-2xl p-4 border-2 border-sky-200 shadow-md flex justify-between items-center mb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-sky-500 text-white flex items-center justify-center text-xl shadow-md">
+                <i class="fa-solid fa-headphones-simple"></i>
+            </div>
+            <div>
+                <h1 class="font-en text-lg sm:text-xl font-bold text-sky-700 leading-tight">6th English Dictation</h1>
+                <p class="text-xs text-slate-500 font-semibold">Lesson: Frequency (듣고 스펠링 & 뜻 쓰기)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 bg-sky-50 px-3 py-1.5 rounded-xl border border-sky-100">
+            <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+            <span class="font-en font-bold text-slate-700 text-base" id="score-display">0 / 14</span>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-xl flex-grow flex flex-col justify-center">
+
+        <!-- 1. Start Screen -->
+        <div id="screen-start" class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-100 shadow-xl text-center flex flex-col items-center">
+            <div class="w-20 h-20 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center text-4xl mb-4 shadow-inner">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-2">초등 6학년 영어 받아쓰기 시험</h2>
+            <p class="text-xs sm:text-sm text-slate-600 mb-6 leading-relaxed max-w-md">
+                오디오를 듣고 <b>영어 스펠링</b>과 <b>우리말 뜻</b>을 모두 정확히 직접 입력하세요!<br>
+                <span class="inline-block mt-2 font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200">
+                    ⚠️ 틀린 답 수정 기회는 문제당 1번만 추가로 제공됩니다!
+                </span>
+            </p>
+
+            <div class="w-full bg-slate-50 rounded-2xl p-4 border border-slate-200 mb-6 text-left text-xs sm:text-sm space-y-2 text-slate-600">
+                <div class="flex items-center gap-2 font-bold text-sky-700">
+                    <i class="fa-solid fa-list-check"></i> 출제 문제 구성 (총 14문제)
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 pt-1">
+                    <div>• 단어 10개 (듣고 스펠링 & 뜻 입력)</div>
+                    <div>• 문장 4개 (듣고 스펠링 & 뜻 입력)</div>
+                </div>
+            </div>
+
+            <button onclick="startTest()" class="w-full py-4 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-bold rounded-2xl text-lg shadow-lg hover:shadow-xl transform active:scale-95 transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> 받아쓰기 시험 시작하기
+            </button>
+        </div>
+
+        <!-- 2. Quiz Screen -->
+        <div id="screen-quiz" class="hidden bg-white rounded-3xl p-5 sm:p-8 border-2 border-sky-100 shadow-xl relative">
+            
+            <!-- Progress Bar & Hearts -->
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <span class="font-en text-xs font-bold text-sky-600 bg-sky-100 px-3 py-1 rounded-full" id="quiz-type-badge">
+                        WORD 1 / 14
+                    </span>
+                </div>
+                
+                <!-- Hearts / Opportunities (2 Chances) -->
+                <div class="flex items-center gap-1.5" id="heart-container">
+                    <span class="text-xs font-bold text-slate-400 mr-1">기회:</span>
+                    <i class="fa-solid fa-heart text-red-500 text-lg heart-icon" id="heart-1"></i>
+                    <i class="fa-solid fa-heart text-red-500 text-lg heart-icon" id="heart-2"></i>
+                </div>
+            </div>
+
+            <!-- Audio Listen Button Area -->
+            <div class="flex flex-col items-center justify-center my-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <button onclick="playTTS(1.0)" class="w-20 h-20 rounded-full bg-gradient-to-tr from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white flex items-center justify-center text-3xl shadow-lg active:scale-90 transition group" title="듣기">
+                        <i class="fa-solid fa-volume-high group-hover:scale-110 transition"></i>
+                    </button>
+                    <button onclick="playTTS(0.75)" class="w-12 h-12 rounded-full bg-slate-100 hover:bg-sky-100 text-sky-600 border border-slate-200 flex flex-col items-center justify-center text-xs font-bold active:scale-90 transition" title="느리게 듣기">
+                        <i class="fa-solid fa-turtle text-sm mb-0.5"></i>
+                        <span>0.8x</span>
+                    </button>
+                </div>
+                <p class="text-xs font-bold text-sky-600">음성을 듣고 아래에 스펠링과 뜻을 적으세요!</p>
+            </div>
+
+            <!-- Dual Input Form (English Spelling & Korean Meaning) -->
+            <form id="quiz-form" onsubmit="handleAnswerSubmit(event)" class="space-y-4">
+                <div>
+                    <label for="user-input-en" class="block text-xs font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-language text-sky-500"></i> 1. 영어 스펠링 입력:
+                    </label>
+                    <input type="text" id="user-input-en" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                           placeholder="English spelling..." 
+                           class="w-full text-center font-en text-lg sm:text-xl font-bold py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition bg-slate-50 focus:bg-white">
+                </div>
+
+                <div>
+                    <label for="user-input-kr" class="block text-xs font-bold text-slate-600 mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-spell-check text-indigo-500"></i> 2. 우리말 뜻 입력:
+                    </label>
+                    <input type="text" id="user-input-kr" autocomplete="off" autocorrect="off" spellcheck="false"
+                           placeholder="우리말 뜻 입력..." 
+                           class="w-full text-center text-base sm:text-lg font-bold py-3 px-4 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 outline-none transition bg-slate-50 focus:bg-white">
+                </div>
+
+                <!-- Hint Display Box (Shown on 1st Fail) -->
+                <div id="hint-box" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+                    <p class="text-xs text-amber-700 font-bold mb-1">⚠️ 틀렸습니다! 1번의 재도전 기회가 남아있습니다.</p>
+                    <div class="text-xs text-amber-900 space-y-1">
+                        <div><span class="font-bold">스펠링 힌트:</span> <span class="font-en font-bold tracking-wider" id="hint-en">_ _ a y s</span></div>
+                        <div><span class="font-bold">뜻 힌트:</span> <span id="hint-kr">ㅎㅅ, ㅇㅈㄴ</span></div>
+                    </div>
+                </div>
+
+                <!-- Feedback Message -->
+                <div id="feedback-msg" class="h-6 text-center text-xs font-bold"></div>
+
+                <button type="submit" id="submit-btn" class="w-full py-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-2xl text-base shadow-md active:scale-95 transition">
+                    정답 확인하기 (Enter)
+                </button>
+            </form>
+        </div>
+
+        <!-- 3. Result Screen -->
+        <div id="screen-result" class="hidden bg-white rounded-3xl p-6 sm:p-8 border-2 border-sky-100 shadow-xl text-center">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center text-4xl mb-4 mx-auto shadow-inner">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-1">시험 완료!</h2>
+            <p class="text-xs text-slate-500 mb-6">수고하셨습니다! 결과를 확인해보세요.</p>
+
+            <!-- Final Score Box -->
+            <div class="bg-gradient-to-r from-sky-500 to-indigo-600 text-white p-6 rounded-2xl mb-6 shadow-lg flex justify-around items-center">
+                <div class="text-center">
+                    <span class="text-xs text-sky-100 font-bold block mb-1">최종 점수</span>
+                    <span class="font-en text-4xl font-extrabold" id="final-score">100점</span>
+                </div>
+                <div class="h-10 w-[1px] bg-sky-300/40"></div>
+                <div class="text-center">
+                    <span class="text-xs text-sky-100 font-bold block mb-1">맞힌 문제</span>
+                    <span class="font-en text-4xl font-extrabold" id="final-correct-count">14 / 14</span>
+                </div>
+            </div>
+
+            <!-- Breakdown Detail List -->
+            <div class="text-left mb-6">
+                <h3 class="text-xs font-bold text-slate-500 mb-3 flex items-center gap-1.5">
+                    <i class="fa-solid fa-clipboard-list text-sky-500"></i> 오답 노트 및 상세 결과
+                </h3>
+                <div id="result-list" class="max-h-60 overflow-y-auto space-y-2 pr-1 text-xs">
+                    <!-- Dynamic Result Items -->
+                </div>
+            </div>
+
+            <button onclick="restartTest()" class="w-full py-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-2xl text-base shadow-lg transition flex items-center justify-center gap-2">
+                <i class="fa-solid fa-rotate-right"></i> 다시 시험 보기
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-xl text-center text-xs text-slate-400 py-3">
+        © 초등학교 6학년 영어 Dictation Learning Platform
+    </footer>
+
+    <!-- Logic Script -->
+    <script>
+        // ----------------------------------------------------
+        // Quiz Data Bank (Primary 6th Grade Frequency Unit)
+        // 10 Words + 4 Sentences = 14 Questions
+        // ----------------------------------------------------
+        const questions = [
+            // Words (10)
+            { type: "단어", english: "always", korean: ["항상", "언제나"], hintEn: "a _ _ a y s", hintKr: "ㅎㅅ, ㅇㅈㄴ" },
+            { type: "단어", english: "usually", korean: ["보통", "대개"], hintEn: "u _ _ a l l y", hintKr: "ㅂㅌ, ㄷㄱ" },
+            { type: "단어", english: "often", korean: ["자주", "종종"], hintEn: "o _ t _ n", hintKr: "ㅈㅈ, ㅈㅈ" },
+            { type: "단어", english: "sometimes", korean: ["때때로", "가끔"], hintEn: "s _ m _ t _ m _ s", hintKr: "ㄸㄸㄹ, ㄱㄲ" },
+            { type: "단어", english: "never", korean: ["결코", "전혀", "결코 아니다"], hintEn: "n _ v _ r", hintKr: "ㄱㅋ ~ㅇㄷ, ㅈㅎ" },
+            { type: "단어", english: "once", korean: ["한 번", "한번", "1회"], hintEn: "o _ c e", hintKr: "ㅎ ㅂ, 1ㅎ" },
+            { type: "단어", english: "twice", korean: ["두 번", "두번", "2회"], hintEn: "t _ i c e", hintKr: "ㄷ ㅂ, 2ㅎ" },
+            { type: "단어", english: "daily", korean: ["매일", "매일의", "날마다"], hintEn: "d _ i l y", hintKr: "ㅁㅇ, ㄴㅁㄷ" },
+            { type: "단어", english: "week", korean: ["주", "일주일"], hintEn: "w _ _ k", hintKr: "ㅈ, ㅇㅈㅇ" },
+            { type: "단어", english: "month", korean: ["달", "월"], hintEn: "m _ n t h", hintKr: "ㄷ, ㅇ" },
+
+            // Sentences (4)
+            { 
+                type: "문장", 
+                english: "How often do you exercise?", 
+                korean: ["너는 얼마나 자주 운동하니", "얼마나 자주 운동하니", "너는 얼마나 자주 운동을 하니"], 
+                hintEn: "H _ w  o _ t _ n  d _  y _ u  e _ e _ c _ s e?", 
+                hintKr: "ㄴㄴ ㅇㅁㄴ ㅈㅈ ㅇㄷㅎㄴ?" 
+            },
+            { 
+                type: "문장", 
+                english: "I clean my room twice a week.", 
+                korean: ["나는 일주일에 두 번 내 방을 청소해", "나는 일주일에 두번 청소해", "나는 일주일에 두 번 방을 청소한다"], 
+                hintEn: "I  c _ e a n  m y  r _ o m  t _ i c e  a  w _ e k.", 
+                hintKr: "ㄴㄴ ㅇㅈㅇㅇ ㄷ ㅂ ㄴ ㅂㅇ ㅊㅅㅎ." 
+            },
+            { 
+                type: "문장", 
+                english: "How often does he eat breakfast?", 
+                korean: ["그는 얼마나 자주 아침을 먹니", "그는 얼마나 자주 아침 식사를 하니", "그는 얼마나 자주 아침을 먹나요"], 
+                hintEn: "H _ w  o _ t _ n  d _ e s  h _  e _ t  b _ e a k f a s t?", 
+                hintKr: "ㄱㄴ ㅇㅁㄴ ㅈㅈ ㅇㅊ ㅁㄴ?" 
+            },
+            { 
+                type: "문장", 
+                english: "She always brushes her teeth.", 
+                korean: ["그녀는 항상 이빨을 닦는다", "그녀는 항상 양치질을 한다", "그녀는 항상 이를 닦는다"], 
+                hintEn: "S h e  a _ _ a y s  b _ u s h e s  h e r  t _ e t h.", 
+                hintKr: "ㄱㄴㄴ ㅎㅅ ㅇㄹ ㄷㄴㄷ." 
+            }
+        ];
+
+        // App State
+        let currentIndex = 0;
+        let score = 0;
+        let attemptsLeft = 2; // 2 chances per question
+        let results = []; // History array to store attempt statuses
+
+        // Tone.js Sound Synthesizers
+        let synth, polySynth;
+
+        function initSound() {
+            if (!synth) {
+                synth = new Tone.Synth().toDestination();
+                polySynth = new Tone.PolySynth(Tone.Synth).toDestination();
+            }
+        }
+
+        // Sound Effects Helper
+        function playSound(type) {
+            try {
+                Tone.start();
+                initSound();
+                const now = Tone.now();
+
+                if (type === 'correct') {
+                    // Ding-Dong Fanfare (C5 -> E5 -> G5)
+                    polySynth.triggerAttackRelease(["C5", "E5", "G5"], "8n", now);
+                } else if (type === 'warning') {
+                    // Warning sound on 1st fail
+                    synth.triggerAttackRelease("C4", "8n", now);
+                } else if (type === 'fail') {
+                    // Out of chances sound (F3 -> D3)
+                    synth.triggerAttackRelease("Eb3", "8n", now);
+                    synth.triggerAttackRelease("C3", "8n", now + 0.15);
+                } else if (type === 'finish') {
+                    // Finish Victory Melodies
+                    polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "4n", now);
+                }
+            } catch (e) {
+                console.log("Audio play suppressed:", e);
+            }
+        }
+
+        // Web Speech API (English TTS)
+        function playTTS(rate = 1.0) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speech
+                const q = questions[currentIndex];
+                const utterance = new SpeechSynthesisUtterance(q.english);
+                utterance.lang = 'en-US';
+                utterance.rate = rate; // 1.0 normal, 0.75 slow
+                utterance.pitch = 1.0;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert("이 브라우저는 음성 합성을 지원하지 않습니다.");
+            }
+        }
+
+        // Single word Speech synthesis helper for result sheet
+        function playWordTTS(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Start Test Workflow
+        function startTest() {
+            initSound();
+            currentIndex = 0;
+            score = 0;
+            results = [];
+
+            document.getElementById('screen-start').classList.add('hidden');
+            document.getElementById('screen-result').classList.add('hidden');
+            document.getElementById('screen-quiz').classList.remove('hidden');
+
+            loadQuestion();
+        }
+
+        // Load Question
+        function loadQuestion() {
+            attemptsLeft = 2;
+            const q = questions[currentIndex];
+
+            // UI Updates
+            document.getElementById('quiz-type-badge').innerText = `${q.type} ${currentIndex + 1} / ${questions.length}`;
+            
+            document.getElementById('user-input-en').value = '';
+            document.getElementById('user-input-kr').value = '';
+            document.getElementById('user-input-en').disabled = false;
+            document.getElementById('user-input-kr').disabled = false;
+            
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').className = "w-full py-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-2xl text-base shadow-md active:scale-95 transition";
+            document.getElementById('submit-btn').innerText = "정답 확인하기 (Enter)";
+
+            // Reset Hearts
+            updateHeartsUI();
+
+            // Reset Hint & Feedback
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('feedback-msg').innerText = '';
+            document.getElementById('score-display').innerText = `${score} / ${questions.length}`;
+
+            // Auto focus input
+            setTimeout(() => {
+                document.getElementById('user-input-en').focus();
+                playTTS(1.0); // Auto play sound on new question load
+            }, 300);
+        }
+
+        // Update Hearts
+        function updateHeartsUI() {
+            const h1 = document.getElementById('heart-1');
+            const h2 = document.getElementById('heart-2');
+
+            if (attemptsLeft === 2) {
+                h1.className = "fa-solid fa-heart text-red-500 text-lg heart-icon";
+                h2.className = "fa-solid fa-heart text-red-500 text-lg heart-icon";
+            } else if (attemptsLeft === 1) {
+                h1.className = "fa-solid fa-heart text-red-500 text-lg heart-icon";
+                h2.className = "fa-solid fa-heart text-slate-300 text-lg heart-icon";
+            } else {
+                h1.className = "fa-solid fa-heart text-slate-300 text-lg heart-icon";
+                h2.className = "fa-solid fa-heart text-slate-300 text-lg heart-icon";
+            }
+        }
+
+        // Normalize text for comparison (ignore punctuation & whitespace)
+        function normalizeText(str) {
+            return str.trim().toLowerCase().replace(/[.,?!]/g, '').replace(/\s+/g, ' ');
+        }
+
+        // Check if Korean answer matches acceptable answers
+        function checkKoreanMeaning(userKr, validAnswers) {
+            const normUser = userKr.trim().replace(/[.,?!~]/g, '').replace(/\s+/g, '');
+            return validAnswers.some(ans => {
+                const normAns = ans.trim().replace(/[.,?!~]/g, '').replace(/\s+/g, '');
+                return normUser.includes(normAns) || normAns.includes(normUser);
+            });
+        }
+
+        // Answer Submission Handler
+        function handleAnswerSubmit(e) {
+            e.preventDefault();
+            const inputEnEl = document.getElementById('user-input-en');
+            const inputKrEl = document.getElementById('user-input-kr');
+            const userEnVal = inputEnEl.value;
+            const userKrVal = inputKrEl.value;
+            const currentQ = questions[currentIndex];
+
+            if (!userEnVal.trim() || !userKrVal.trim()) {
+                document.getElementById('feedback-msg').className = "h-6 text-center text-xs font-bold text-amber-600";
+                document.getElementById('feedback-msg').innerText = "⚠️ 영어 스펠링과 우리말 뜻을 모두 입력해주세요!";
+                return;
+            }
+
+            const isEnCorrect = normalizeText(userEnVal) === normalizeText(currentQ.english);
+            const isKrCorrect = checkKoreanMeaning(userKrVal, currentQ.korean);
+
+            if (isEnCorrect && isKrCorrect) {
+                // Correct Answer!
+                playSound('correct');
+                score++;
+                document.getElementById('score-display').innerText = `${score} / ${questions.length}`;
+
+                document.getElementById('feedback-msg').className = "h-6 text-center text-xs font-bold text-emerald-600";
+                document.getElementById('feedback-msg').innerText = "⭕ 정답입니다! 아주 잘했어요!";
+
+                results.push({
+                    q: currentQ,
+                    status: attemptsLeft === 2 ? '1st_try' : '2nd_try',
+                    userEn: userEnVal,
+                    userKr: userKrVal
+                });
+
+                // Confetti mini burst
+                confetti({ particleCount: 30, spread: 60, origin: { y: 0.7 } });
+
+                disableInputAndNext();
+            } else {
+                // Wrong Answer
+                attemptsLeft--;
+                updateHeartsUI();
+
+                const quizCard = document.getElementById('screen-quiz');
+                quizCard.classList.add('shake');
+                setTimeout(() => quizCard.classList.remove('shake'), 400);
+
+                if (attemptsLeft === 1) {
+                    // First failure -> Give 2nd Chance + Hint
+                    playSound('warning');
+                    document.getElementById('feedback-msg').className = "h-6 text-center text-xs font-bold text-amber-600";
+                    
+                    let errorDetails = [];
+                    if (!isEnCorrect) errorDetails.push("영어 스펠링");
+                    if (!isKrCorrect) errorDetails.push("우리말 뜻");
+                    document.getElementById('feedback-msg').innerText = `❌ ${errorDetails.join(", ")} 확인 후 다시 도전하세요!`;
+
+                    // Display Hint
+                    document.getElementById('hint-en').innerText = currentQ.hintEn;
+                    document.getElementById('hint-kr').innerText = currentQ.hintKr;
+                    document.getElementById('hint-box').classList.remove('hidden');
+
+                    if (!isEnCorrect) {
+                        inputEnEl.select();
+                        inputEnEl.focus();
+                    } else {
+                        inputKrEl.select();
+                        inputKrEl.focus();
+                    }
+                } else {
+                    // Second failure -> Out of chances (Mark as incorrect)
+                    playSound('fail');
+                    document.getElementById('feedback-msg').className = "h-6 text-center text-xs font-bold text-red-600";
+                    document.getElementById('feedback-msg').innerText = `❌ 오답! 정답: ${currentQ.english} (${currentQ.korean[0]})`;
+
+                    results.push({
+                        q: currentQ,
+                        status: 'failed',
+                        userEn: userEnVal,
+                        userKr: userKrVal
+                    });
+
+                    disableInputAndNext();
+                }
+            }
+        }
+
+        // Disable input and progress to next question
+        function disableInputAndNext() {
+            document.getElementById('user-input-en').disabled = true;
+            document.getElementById('user-input-kr').disabled = true;
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.className = "w-full py-4 bg-slate-300 text-slate-500 font-bold rounded-2xl text-base cursor-not-allowed";
+
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResultScreen();
+                }
+            }, 1600);
+        }
+
+        // Show Final Score Result Screen
+        function showResultScreen() {
+            playSound('finish');
+            document.getElementById('screen-quiz').classList.add('hidden');
+            document.getElementById('screen-result').classList.remove('hidden');
+
+            const totalScorePct = Math.round((score / questions.length) * 100);
+            document.getElementById('final-score').innerText = `${totalScorePct}점`;
+            document.getElementById('final-correct-count').innerText = `${score} / ${questions.length}`;
+
+            // Render detailed list
+            const resultListEl = document.getElementById('result-list');
+            resultListEl.innerHTML = '';
+
+            results.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "p-3 rounded-xl border flex justify-between items-center bg-slate-50 border-slate-200";
+
+                let badgeHTML = '';
+                if (item.status === '1st_try') {
+                    badgeHTML = `<span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded text-[10px]">1차 맞힘 ⭕</span>`;
+                } else if (item.status === '2nd_try') {
+                    badgeHTML = `<span class="bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded text-[10px]">2차 맞힘 🟡</span>`;
+                } else {
+                    badgeHTML = `<span class="bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded text-[10px]">틀림 ❌</span>`;
+                }
+
+                div.innerHTML = `
+                    <div class="space-y-0.5 max-w-[80%]">
+                        <div class="flex items-center gap-2">
+                            <span class="font-en font-bold text-slate-800 text-sm">${idx + 1}. ${item.q.english}</span>
+                            ${badgeHTML}
+                        </div>
+                        <p class="text-[11px] text-slate-500 font-medium">정답 뜻: ${item.q.korean[0]}</p>
+                        ${item.status === 'failed' ? `<p class="text-[11px] text-red-500">내 작성: "${item.userEn}" / "${item.userKr}"</p>` : ''}
+                    </div>
+                    <button onclick="playWordTTS('${item.q.english}')" class="w-8 h-8 rounded-full bg-white hover:bg-sky-100 text-sky-600 border border-slate-200 flex items-center justify-center text-xs shadow-sm">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                `;
+                resultListEl.appendChild(div);
+            });
+
+            // Big Confetti
+            if (totalScorePct >= 70) {
+                confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+            }
+        }
+
+        // Restart Test
+        function restartTest() {
+            startTest();
+        }
+    </script>
+</body>
+</html>
